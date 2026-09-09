@@ -19,7 +19,7 @@ export async function createJobRequest(payload: {
     let customerId = userId ? new ObjectId(userId) : null;
     if (!customerId) {
       const seeded = await db.collection('users').findOne({ role: 'CUSTOMER' });
-      customerId = seeded?._id || null;
+      customerId = seeded?._id || null; 
     }
 
     const newAppliance = await db.collection('appliances').insertOne({
