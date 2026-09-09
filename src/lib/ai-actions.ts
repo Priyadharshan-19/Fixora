@@ -53,7 +53,7 @@ export async function sendCoPilotMessage(applianceName: string, issue: string, c
 
     // Map existing UI history perfectly to Groq's expected format
     const formattedHistory = chatHistory.map(msg => ({
-      role: msg.role === 'ai' ? 'assistant' : 'user',
+      role: (msg.role === 'ai' ? 'assistant' : 'user') as 'user' | 'assistant',
       content: msg.text
     }));
 
