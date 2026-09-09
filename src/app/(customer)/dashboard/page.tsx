@@ -7,10 +7,12 @@ import {
   ChevronRight,
   WashingMachine,
   Refrigerator,
+  Star,
 } from 'lucide-react';
 import { getDatabase } from '@/lib/mongodb';
 import { Badge } from '@/components/ui/Badge';
 import { BottomNav } from '@/components/shared/BottomNav';
+import ReviewTechnicianClient from './ReviewTechnicianClient';
 
 export const revalidate = 0; // Ensures fresh data per page request
 
@@ -154,43 +156,71 @@ export default async function CustomerDashboardPage() {
 
         <div className="flex flex-col gap-3">
           {recentServices.map((job) => (
-            <Link
+            <div
               key={job._id.toString()}
-              href={
-                job.status !== 'COMPLETED'
-                  ? `/track/${job._id.toString()}`
-                  : `/history`
-              }
-              className="block bg-white border border-neutral-100 rounded-2xl p-4 shadow-soft hover:border-neutral-200 transition-all"
+              className="block bg-white border border-neutral-100 rounded-2xl p-4 shadow-soft transition-all"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-xl bg-neutral-50 flex items-center justify-center text-neutral-600 border border-neutral-100">
-                    <WashingMachine size={18} />
+              <Link
+                href={
+                  job.status !== 'COMPLETED'
+                    ? `/track/${job._id.toString()}`
+                    : `/history`
+                }
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-neutral-50 flex items-center justify-center text-neutral-600 border border-neutral-100">
+                      <WashingMachine size={18} />
+                    </div>
+
+                    <div>
+                      <h3 className="text-xs font-semibold text-neutral-800">
+                        {job.issueDescription.slice(0, 26)}...
+                      </h3>
+
+                      <p className="text-[11px] text-neutral-400">
+                        Created:{' '}
+                        {new Date(job.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
                   </div>
 
-                  <div>
-                    <h3 className="text-xs font-semibold text-neutral-800">
-                      {job.issueDescription.slice(0, 26)}...
-                    </h3>
-
-                    <p className="text-[11px] text-neutral-400">
-                      Created:{' '}
-                      {new Date(job.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
+                  <Badge
+                    status={
+                      job.status === 'COMPLETED'
+                        ? 'COMPLETED'
+                        : 'IN_PROGRESS'
+                    }
+                    label={job.status.replace('_', ' ')}
+                  />
                 </div>
+              </Link>
 
-                <Badge
-                  status={
-                    job.status === 'COMPLETED'
-                      ? 'COMPLETED'
-                      : 'IN_PROGRESS'
-                  }
-                  label={job.status.replace('_', ' ')}
-                />
-              </div>
-            </Link>
+              {/* Added Review Components */}
+              {job.status === 'COMPLETED' && !job.review && (
+                <div className="mt-4">
+                  <ReviewTechnicianClient 
+                    jobId={job._id.toString()} 
+                    techName={job.techName || "your technician"} 
+                  />
+                </div>
+              )}
+
+              {job.status === 'COMPLETED' && job.review && (
+                <div className="mt-4 bg-white border border-neutral-200 p-4 rounded-xl space-y-2 shadow-sm">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-600 uppercase tracking-widest bg-amber-50 px-2.5 py-1 rounded-md w-fit">
+                    <Star size={12} className="fill-amber-500" /> Rated {job.review.rating} out of 5
+                  </div>
+                  
+                  {/* This displays the customer's text feedback! */}
+                  {job.review.feedback && (
+                    <p className="text-xs text-neutral-600 italic leading-relaxed pt-1">
+                      "{job.review.feedback}"
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           ))}
         </div>
       </section>
