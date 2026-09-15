@@ -6,6 +6,7 @@ import { ObjectId } from 'mongodb';
 import { ArrowLeft, Send } from 'lucide-react';
 import AiInsightsClient from './AiInsightsClient';
 import PhotoGalleryClient from './PhotoGalleryClient';
+import WebhookTrigger from '@/components/WebhookTrigger'; // <-- Added Import
 
 export default async function PreVisitPrepPage({ params }: { params: Promise<{ jobId: string }> }) {
   const { jobId } = await params;
@@ -34,6 +35,10 @@ export default async function PreVisitPrepPage({ params }: { params: Promise<{ j
 
   return (
     <main className="min-h-screen bg-neutral-50 flex flex-col justify-between max-w-md mx-auto border-x border-neutral-100 shadow-sm relative">
+      
+      {/* Trigger added here: It is invisible but will fire instantly on load! */}
+      <WebhookTrigger />
+
       <div>
         <header className="bg-white px-5 py-4 border-b border-neutral-100 flex items-center gap-3 sticky top-0 z-10">
           <Link href="/jobs" className="p-2 -ml-2 text-neutral-700 hover:text-black">
