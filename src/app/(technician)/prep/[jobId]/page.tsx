@@ -7,6 +7,9 @@ import { ArrowLeft, Send } from 'lucide-react';
 import AiInsightsClient from './AiInsightsClient';
 import PhotoGalleryClient from './PhotoGalleryClient';
 
+// THIS IS THE FIX: It forces Vercel to run the code fresh every single time the page opens
+export const dynamic = 'force-dynamic';
+
 export default async function PreVisitPrepPage({ params }: { params: Promise<{ jobId: string }> }) {
   const { jobId } = await params;
   const db = await getDatabase();
@@ -23,7 +26,7 @@ export default async function PreVisitPrepPage({ params }: { params: Promise<{ j
   const applianceName = appliance?.brand || 'Appliance';
 
   // =========================================================================
-  // SERVER-SIDE WEBHOOK TRIGGER (Acts just like PowerShell, bypasses CORS!)
+  // SERVER-SIDE WEBHOOK TRIGGER
   // =========================================================================
   try {
     await fetch('https://api.agents.snsihub.ai/webhook-test/de8d7fb8-def3-4335-ad04-4962e47ec459', {
@@ -31,10 +34,11 @@ export default async function PreVisitPrepPage({ params }: { params: Promise<{ j
       headers: {
         'Content-Type': 'application/json',
       },
-      // Added the jobId here too, so your webhook knows which job triggered it!
-      body: JSON.stringify({ message: 'test', jobId: jobId }), 
-      cache: 'no-store' // Forces Next.js to fire this fresh every time the page loads
+      // Back to the EXACT payload you used in PowerShell
+      body: JSON.stringify({ message: 'test' }), 
+      cache: 'no-store' 
     });
+    console.log("Webhook fired to SNS Workbench successfully!");
   } catch (error) {
     console.error("Webhook failed:", error);
   }
@@ -64,7 +68,6 @@ export default async function PreVisitPrepPage({ params }: { params: Promise<{ j
         </header>
 
         <div className="p-5 space-y-6 pb-8">
-          {/* Reported Issue Card */}
           <div className="bg-white border border-neutral-100 rounded-2xl p-5 shadow-sm space-y-3">
             <h2 className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Reported Issue</h2>
             <p className="text-sm font-bold text-neutral-800 leading-snug">"{job.issueDescription}"</p>
@@ -73,10 +76,7 @@ export default async function PreVisitPrepPage({ params }: { params: Promise<{ j
             </div>
           </div>
 
-          {/* Attached Customer Photos */}
           <PhotoGalleryClient photos={job.photos || []} />
-
-          {/* AI Insights & Required Parts */}
           <AiInsightsClient applianceName={applianceName} issue={job.issueDescription} />
         </div>
       </div>
