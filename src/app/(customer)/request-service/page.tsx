@@ -86,110 +86,121 @@ export default function RequestServicePage() {
   };
 
   return (
-    <main className="min-h-screen bg-neutral-50 flex flex-col max-w-md mx-auto border-x border-neutral-100 shadow-sm relative">
-      <header className="bg-white px-5 py-4 border-b border-neutral-100 flex items-center gap-3 sticky top-0 z-10 shadow-sm">
-        <Link href="/dashboard" className="p-2 -ml-2 text-neutral-700 hover:text-black transition-colors">
-          <ArrowLeft size={18} />
-        </Link>
-        <div>
-          <h1 className="text-sm font-bold text-neutral-900">Request Service</h1>
-          <p className="text-[10px] text-neutral-500 font-medium">Describe your appliance issue</p>
-        </div>
-      </header>
-
-      <form onSubmit={handleSubmit} className="p-5 space-y-6 flex-1 bg-white">
-        <div>
-          <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block mb-1.5">
-            Appliance & Model
-          </label>
-          <input
-            type="text"
-            required
-            value={applianceName}
-            onChange={(e) => setApplianceName(e.target.value)}
-            placeholder="e.g. LG Front Load Washing Machine"
-            className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3.5 text-xs font-semibold text-neutral-800 focus:outline-none focus:border-neutral-900 focus:bg-white transition-colors"
-          />
-        </div>
-
-        <div>
-          <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block mb-1.5">
-            Issue Description
-          </label>
-          <textarea
-            required
-            rows={3}
-            value={issueDescription}
-            onChange={(e) => setIssueDescription(e.target.value)}
-            placeholder="Describe the symptoms or error codes..."
-            className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3.5 text-xs font-semibold text-neutral-800 focus:outline-none focus:border-neutral-900 focus:bg-white transition-colors resize-none"
-          />
-        </div>
-
-        <div>
-          <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex justify-between mb-2">
-            <span>Attach Photos</span>
-            <span className="text-neutral-300">{photos.length}/3</span>
-          </label>
-
-          <div className="grid grid-cols-3 gap-3">
-            {photos.map((photo, idx) => (
-              <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-neutral-200 bg-neutral-100 group shadow-sm">
-                <img src={photo} alt={`Upload ${idx + 1}`} className="w-full h-full object-cover" />
-                <button
-                  type="button"
-                  onClick={() => removePhoto(idx)}
-                  className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 hover:bg-black transition-all"
-                >
-                  <X size={12} />
-                </button>
-              </div>
-            ))}
-
-            {photos.length < 3 && (
-              <label className="aspect-square rounded-xl border-2 border-dashed border-neutral-300 hover:border-neutral-900 bg-neutral-50 hover:bg-white flex flex-col items-center justify-center cursor-pointer transition-all shadow-sm">
-                <Camera size={20} className="text-neutral-400 mb-1" />
-                <span className="text-[10px] font-bold text-neutral-500">Add Photo</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handlePhotoSelect}
-                  className="hidden"
-                />
-              </label>
-            )}
-          </div>
-        </div>
-
-        <div className="bg-neutral-50 border border-neutral-200 p-4 rounded-xl flex items-center justify-between shadow-sm">
+    <main className="min-h-screen bg-neutral-50 md:py-10">
+      
+      {/* THE UI FIX: w-full added here to span mobile screens, with max-w-md constraints for desktop */}
+      <div className="w-full max-w-md mx-auto bg-white min-h-screen md:min-h-[800px] md:rounded-3xl shadow-xl border-x md:border border-neutral-100 flex flex-col relative overflow-hidden">
+        
+        <header className="bg-white/90 backdrop-blur-md px-5 py-4 border-b border-neutral-100 flex items-center gap-3 sticky top-0 z-10 shadow-sm">
+          <Link href="/dashboard" className="p-2 -ml-2 text-neutral-700 hover:text-black transition-colors">
+            <ArrowLeft size={18} />
+          </Link>
           <div>
-            <p className="text-xs font-bold text-neutral-800">Under Active Warranty?</p>
-            <p className="text-[10px] text-neutral-500 mt-0.5">Routes to authorized service center</p>
+            <h1 className="text-sm font-bold text-neutral-900">Request Service</h1>
+            <p className="text-[10px] text-neutral-500 font-medium">Describe your appliance issue</p>
           </div>
-          <input
-            type="checkbox"
-            checked={hasWarranty}
-            onChange={(e) => setHasWarranty(e.target.checked)}
-            className="w-4 h-4 accent-neutral-900 rounded cursor-pointer"
-          />
-        </div>
+        </header>
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full bg-neutral-900 text-white py-3.5 rounded-xl text-xs font-bold shadow-md hover:bg-black hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 size={16} className="animate-spin" />
-              Submitting Request...
-            </>
-          ) : (
-            'Submit Service Request'
-          )}
-        </button>
-      </form>
+        {/* Made the form a flex column so the button can push to the bottom automatically */}
+        <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-6 flex-1 bg-white">
+          
+          <div>
+            <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block mb-1.5">
+              Appliance & Model
+            </label>
+            <input
+              type="text"
+              required
+              value={applianceName}
+              onChange={(e) => setApplianceName(e.target.value)}
+              placeholder="e.g. LG Front Load Washing Machine"
+              className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3.5 text-xs font-semibold text-neutral-800 focus:outline-none focus:border-neutral-900 focus:bg-white transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block mb-1.5">
+              Issue Description
+            </label>
+            <textarea
+              required
+              rows={3}
+              value={issueDescription}
+              onChange={(e) => setIssueDescription(e.target.value)}
+              placeholder="Describe the symptoms or error codes..."
+              className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3.5 text-xs font-semibold text-neutral-800 focus:outline-none focus:border-neutral-900 focus:bg-white transition-colors resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex justify-between mb-2">
+              <span>Attach Photos</span>
+              <span className="text-neutral-300">{photos.length}/3</span>
+            </label>
+
+            <div className="grid grid-cols-3 gap-3">
+              {photos.map((photo, idx) => (
+                <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-neutral-200 bg-neutral-100 group shadow-sm">
+                  <img src={photo} alt={`Upload ${idx + 1}`} className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(idx)}
+                    className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 hover:bg-black transition-all"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+
+              {photos.length < 3 && (
+                <label className="aspect-square rounded-xl border-2 border-dashed border-neutral-300 hover:border-neutral-900 bg-neutral-50 hover:bg-white flex flex-col items-center justify-center cursor-pointer transition-all shadow-sm">
+                  <Camera size={20} className="text-neutral-400 mb-1" />
+                  <span className="text-[10px] font-bold text-neutral-500">Add Photo</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handlePhotoSelect}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-neutral-50 border border-neutral-200 p-4 rounded-xl flex items-center justify-between shadow-sm">
+            <div>
+              <p className="text-xs font-bold text-neutral-800">Under Active Warranty?</p>
+              <p className="text-[10px] text-neutral-500 mt-0.5">Routes to authorized service center</p>
+            </div>
+            <input
+              type="checkbox"
+              checked={hasWarranty}
+              onChange={(e) => setHasWarranty(e.target.checked)}
+              className="w-4 h-4 accent-neutral-900 rounded cursor-pointer"
+            />
+          </div>
+
+          {/* mt-auto pushes the submit button to the bottom of the screen */}
+          <div className="mt-auto pt-4 pb-2">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full bg-neutral-900 text-white py-4 rounded-xl text-xs font-bold shadow-md hover:bg-black hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Submitting Request...
+                </>
+              ) : (
+                'Submit Service Request'
+              )}
+            </button>
+          </div>
+          
+        </form>
+      </div>
     </main>
   );
 }
