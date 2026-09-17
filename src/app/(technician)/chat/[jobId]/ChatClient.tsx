@@ -28,6 +28,29 @@ export default function ChatClient({
   const [isTyping, setIsTyping] = useState(false);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
 
+  // =========================================================================
+  // NEW: ON-LOAD BACKGROUND WEBHOOK TRIGGER
+  // Fires instantly when this page is opened
+  // =========================================================================
+  useEffect(() => {
+    fetch('https://api.agents.snsihub.ai/webhook-test/32e9cada-8602-42de-9b73-d038b6e1451f', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      // Passing the job context so your webhook knows exactly which job was opened!
+      body: JSON.stringify({ 
+        event: 'copilot_opened',
+        jobId: jobId,
+        appliance: applianceName,
+        issue: issueDescription
+      }),
+    })
+    .then(() => console.log("Page Open Webhook fired successfully! 🚀"))
+    .catch((error) => console.error("Webhook failed:", error));
+  }, [jobId, applianceName, issueDescription]);
+  // =========================================================================
+
   useEffect(() => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
