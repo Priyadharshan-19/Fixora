@@ -1,7 +1,8 @@
 import React from 'react';
 import { getDatabase } from '@/lib/mongodb';
 import { Badge } from '@/components/ui/Badge';
-import { dispatchJob } from './actions';
+import { dispatchJob, verifyWarranty } from './actions';
+import { ObjectId } from 'mongodb';
 import { 
   ShieldCheck, 
   Users, 
@@ -27,24 +28,40 @@ export default async function ManagerDashboardPage() {
     .sort({ createdAt: -1 })
     .toArray();
 
-  const pendingJobs = await Promise.all(
-    rawPendingJobs.map(async (job) => {
-      const customer = await db.collection('users').findOne({ _id: job.customerId });
-      const appliance = job.applianceId
-        ? await db.collection('appliances').findOne({ _id: job.applianceId })
-        : null;
+  // Batch-fetch customers & appliances for pending jobs (avoids N+1 queries)
+  const pendingCustomerIds = [...new Set(rawPendingJobs.map(j => j.customerId?.toString()).filter(Boolean))]
+    .map(id => new ObjectId(id));
+  const pendingApplianceIds = [...new Set(rawPendingJobs.map(j => j.applianceId?.toString()).filter(Boolean))]
+    .map(id => new ObjectId(id));
 
-      return {
-        _id: job._id.toString(),
-        customerName: customer?.name || 'Customer',
-        customerPhone: customer?.phone || 'N/A',
-        applianceName: appliance?.brand || 'Standard Appliance',
-        issueDescription: job.issueDescription || 'No issue description',
-        createdAt: job.createdAt as Date,
-        hasWarranty: job.hasWarranty ?? true
-      };
-    })
-  );
+  const [pendingCustomers, pendingAppliances] = await Promise.all([
+    pendingCustomerIds.length
+      ? db.collection('users').find({ _id: { $in: pendingCustomerIds } }).toArray()
+      : Promise.resolve([]),
+    pendingApplianceIds.length
+      ? db.collection('appliances').find({ _id: { $in: pendingApplianceIds } }).toArray()
+      : Promise.resolve([])
+  ]);
+
+  const pendingCustomerMap = new Map(pendingCustomers.map(c => [c._id.toString(), c]));
+  const pendingApplianceMap = new Map(pendingAppliances.map(a => [a._id.toString(), a]));
+
+  const pendingJobs = rawPendingJobs.map((job) => {
+    const customer = pendingCustomerMap.get(job.customerId?.toString());
+    const appliance = job.applianceId ? pendingApplianceMap.get(job.applianceId.toString()) : null;
+
+    return {
+      _id: job._id.toString(),
+      customerName: customer?.name || 'Customer',
+      customerPhone: customer?.phone || 'N/A',
+      applianceName: appliance?.brand || 'Standard Appliance',
+      issueDescription: job.issueDescription || 'No issue description',
+      createdAt: job.createdAt as Date,
+      hasWarranty: job.hasWarranty ?? true,
+      warrantyDocUrl: job.warrantyDocUrl || null,
+      warrantyVerified: job.warrantyVerified ?? false
+    };
+  });
 
   const rawActiveJobs = await db
     .collection('jobs')
@@ -52,22 +69,44 @@ export default async function ManagerDashboardPage() {
     .sort({ updatedAt: -1 })
     .toArray();
 
-  const activeJobs = await Promise.all(
-    rawActiveJobs.map(async (job) => {
-      const customer = await db.collection('users').findOne({ _id: job.customerId });
-      const tech = job.technicianId ? await db.collection('users').findOne({ _id: job.technicianId }) : null;
-      const appliance = job.applianceId ? await db.collection('appliances').findOne({ _id: job.applianceId }) : null;
+  // Batch-fetch customers, technicians & appliances for active jobs
+  const activeCustomerIds = [...new Set(rawActiveJobs.map(j => j.customerId?.toString()).filter(Boolean))]
+    .map(id => new ObjectId(id));
+  const activeTechnicianIds = [...new Set(rawActiveJobs.map(j => j.technicianId?.toString()).filter(Boolean))]
+    .map(id => new ObjectId(id));
+  const activeApplianceIds = [...new Set(rawActiveJobs.map(j => j.applianceId?.toString()).filter(Boolean))]
+    .map(id => new ObjectId(id));
 
-      return {
-        _id: job._id.toString(),
-        customerName: customer?.name || 'Customer',
-        techName: tech?.name || 'Unassigned Tech',
-        applianceName: appliance?.brand || 'Appliance',
-        status: job.status as string,
-        updatedAt: job.updatedAt as Date
-      };
-    })
-  );
+  const [activeCustomers, activeTechnicians, activeAppliances] = await Promise.all([
+    activeCustomerIds.length
+      ? db.collection('users').find({ _id: { $in: activeCustomerIds } }).toArray()
+      : Promise.resolve([]),
+    activeTechnicianIds.length
+      ? db.collection('users').find({ _id: { $in: activeTechnicianIds } }).toArray()
+      : Promise.resolve([]),
+    activeApplianceIds.length
+      ? db.collection('appliances').find({ _id: { $in: activeApplianceIds } }).toArray()
+      : Promise.resolve([])
+  ]);
+
+  const activeCustomerMap = new Map(activeCustomers.map(c => [c._id.toString(), c]));
+  const activeTechnicianMap = new Map(activeTechnicians.map(t => [t._id.toString(), t]));
+  const activeApplianceMap = new Map(activeAppliances.map(a => [a._id.toString(), a]));
+
+  const activeJobs = rawActiveJobs.map((job) => {
+    const customer = activeCustomerMap.get(job.customerId?.toString());
+    const tech = job.technicianId ? activeTechnicianMap.get(job.technicianId.toString()) : null;
+    const appliance = job.applianceId ? activeApplianceMap.get(job.applianceId.toString()) : null;
+
+    return {
+      _id: job._id.toString(),
+      customerName: customer?.name || 'Customer',
+      techName: tech?.name || 'Unassigned Tech',
+      applianceName: appliance?.brand || 'Appliance',
+      status: job.status as string,
+      updatedAt: job.updatedAt as Date
+    };
+  });
 
   const completedCount = await db.collection('jobs').countDocuments({ status: 'COMPLETED' });
 
@@ -190,10 +229,42 @@ export default async function ManagerDashboardPage() {
                   </div>
 
                   {/* Issue Box */}
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-6 flex-1">
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4 flex-1">
                     <p className="text-xs text-slate-700 font-medium leading-relaxed italic line-clamp-3">
                       "{job.issueDescription}"
                     </p>
+                  </div>
+
+                  {/* Warranty Verification */}
+                  <div className="mb-4">
+                    {job.warrantyDocUrl ? (
+                      <div className="rounded-xl overflow-hidden border border-slate-200 mb-2">
+                        <img src={job.warrantyDocUrl} alt="Warranty document" className="w-full h-24 object-cover" />
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-red-600 font-bold mb-2">No warranty document attached</p>
+                    )}
+                    
+                    {job.warrantyVerified ? (
+                      <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-2 rounded-xl text-[10px] font-bold">
+                        <CheckCircle2 size={12} /> Warranty Verified
+                      </div>
+                    ) : (
+                      <form action={async (formData: FormData) => {
+                        "use server";
+                        await verifyWarranty(formData);
+                      }}>
+                        <input type="hidden" name="jobId" value={job._id} />
+                        <button
+                          type="submit"
+                          disabled={!job.warrantyDocUrl}
+                          className="w-full bg-amber-500 text-white py-2.5 rounded-xl text-xs font-bold shadow-sm hover:bg-amber-600 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                          <ShieldCheck size={14} />
+                          Verify Warranty Doc
+                        </button>
+                      </form>
+                    )}
                   </div>
 
                   {/* Dispatch Form with TypeScript Fix */}
@@ -211,7 +282,8 @@ export default async function ManagerDashboardPage() {
                         <select
                           name="technicianId"
                           required
-                          className="w-full appearance-none bg-white border border-slate-300 rounded-xl py-3 pl-4 pr-10 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
+                          disabled={!job.warrantyVerified}
+                          className="w-full appearance-none bg-white border border-slate-300 rounded-xl py-3 pl-4 pr-10 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:bg-slate-50"
                         >
                           <option value="">Select Field Tech...</option>
                           {technicians.map((tech) => (
@@ -228,10 +300,11 @@ export default async function ManagerDashboardPage() {
 
                     <button
                       type="submit"
-                      className="w-full bg-slate-900 text-white py-3.5 rounded-xl text-xs font-bold shadow-md hover:bg-black hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                      disabled={!job.warrantyVerified}
+                      className="w-full bg-slate-900 text-white py-3.5 rounded-xl text-xs font-bold shadow-md hover:bg-black hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-slate-900"
                     >
                       <Send size={14} />
-                      Dispatch Job
+                      {job.warrantyVerified ? 'Dispatch Job' : 'Verify Warranty First'}
                     </button>
                   </form>
                 </div>

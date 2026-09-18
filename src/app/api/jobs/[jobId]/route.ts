@@ -45,7 +45,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       technicianId, 
       serviceDetails, 
       verifyOtp, 
-      rating 
+      rating,
+      verifyWarranty
     } = body;
 
     const currentJob = await db.collection<ServiceJob>('jobs').findOne({ _id: new ObjectId(jobId) });
@@ -57,7 +58,21 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       updatedAt: new Date(),
     };
 
+    if (verifyWarranty) {
+      updateDoc.warrantyVerified = true;
+      updateDoc.warrantyVerifiedAt = new Date();
+      if (verifyWarranty.managerId) {
+        updateDoc.warrantyVerifiedBy = new ObjectId(verifyWarranty.managerId);
+      }
+    }
+
     if (technicianId) {
+      if (currentJob.hasWarranty && !currentJob.warrantyVerified && !verifyWarranty) {
+        return NextResponse.json(
+          { success: false, error: 'Warranty document must be verified before dispatching a technician.' },
+          { status: 400 }
+        );
+      }
       updateDoc.technicianId = new ObjectId(technicianId);
     }
 

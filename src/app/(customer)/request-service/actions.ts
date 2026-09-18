@@ -8,6 +8,7 @@ export async function createJobRequest(payload: {
   applianceName: string;
   issueDescription: string;
   hasWarranty: boolean;
+  warrantyDoc?: string | null;
   location: { lat: number; lng: number };
   photos?: string[]; // Array of Base64 image strings
 }) {
@@ -40,6 +41,8 @@ export async function createJobRequest(payload: {
       applianceId: newAppliance.insertedId,
       issueDescription: payload.issueDescription,
       hasWarranty: payload.hasWarranty,
+      warrantyDocUrl: payload.hasWarranty ? payload.warrantyDoc || null : null,
+      warrantyVerified: false,
       serviceOption: routingOption,
       location: {
         customer: payload.location,

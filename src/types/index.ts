@@ -61,6 +61,14 @@ export interface ServiceJob {
   urgency: 'LOW' | 'MEDIUM' | 'HIGH' | 'EMERGENCY';
   issueDescription: string;
   serviceOption: 'AUTHORIZED_SERVICE_CENTER' | 'NEARBY_LOCAL_TECHNICIAN';
+
+  // Warranty verification
+  hasWarranty?: boolean;
+  warrantyDocUrl?: string | null;
+  warrantyVerified?: boolean;
+  warrantyVerifiedBy?: ObjectId | string;
+  warrantyVerifiedAt?: Date;
+
   location: {
     address: string;
     city: string;
